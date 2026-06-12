@@ -1,18 +1,16 @@
-FROM nousresearch/hermes-agent:latest
+FROM python:3.11-slim
 
-# Don't override CMD — let s6-overlay manage services
-# Just set environment variables and config
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl git ffmpeg ripgrep && \
+    rm -rf /var/lib/apt/lists/*
 
-ENV API_SERVER_ENABLED=true
-ENV API_SERVER_PORT=10000
-ENV API_SERVER_HOST=0.0.0.0
-ENV GATEWAY_ALLOW_ALL_USERS=true
-ENV PORT=10000
-ENV HERMES_DASHBOARD=true
+RUN pip install --no-cache-dir hermes-agent[web]
 
-# Create hermes config with API server enabled on 0.0.0.0
-RUN mkdir -p /home/agent/.hermes && \
-    printf 'gateway:\n  api_server:\n    enabled: true\n    host: 0.0.0.0\n    port: 10000\napprovals:\n  mode: off\nmemory:\n  memory_enabled: true\n  user_profile_enabled: true\n' > /home/agent/.hermes/config.yaml && \
-    chown -R hermes:hermes /home/agent/.hermes
+RUN mkdir -p /root/.hermes
+
+COPY start.py /start.py
+RUN chmod +x /start.py
 
 EXPOSE 10000
+
+CMD ["python3", "/start.py"]
